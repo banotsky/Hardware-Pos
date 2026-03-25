@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Offline Hardware Store ERP" />
+  <title>HardwareStore ERP</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
+  <style>
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --nav-h: 66px;
+      --radius: 16px;
+      --glass: rgba(255,255,255,0.10);
+      --glass-border: rgba(255,255,255,0.18);
+      --glass-dark: rgba(0,0,0,0.25);
+      --glass-modal: rgba(15,23,42,0.75);
+      --accent: #f59e0b;
+      --accent2: #fbbf24;
+      --success: #10b981;
+      --danger: #ef4444;
+      --info: #38bdf8;
+      --warning: #f59e0b;
+      --text-w: rgba(255,255,255,0.95);
+      --text-w2: rgba(255,255,255,0.65);
+      --text-w3: rgba(255,255,255,0.40);
+      --shadow-glass: 0 8px 32px rgba(0,0,0,0.35);
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.30);
+    }
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f4c75 70%, #1b262c 100%);
+      background-attachment: fixed;
+      color: var(--text-w);
+      overflow-x: hidden;
+    }
+    button { cursor: pointer; border: none; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+    a { color: inherit; text-decoration: none; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+    /* ===== ANIMATED BG PARTICLES ===== */
+    .bg-glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      animation: float1 8s ease-in-out infinite;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(56,189,248,0.10) 0%, transparent 70%);
+      bottom: 100px; left: -100px;
+      animation: float2 10s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-40px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,30px)} }
+
+    /* ===== GLASS MIXIN ===== */
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-glass);
+    }
+    .glass-dark {
+      background: rgba(0,0,0,0.30);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: var(--shadow-glass);
+    }
+
+    /* ===== LOGIN ===== */
+    .login-wrap {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999; padding: 20px;
+    }
+    .login-card {
+      width: 100%; max-width: 420px;
+      border-radius: 28px;
+      padding: 40px 32px;
+      animation: loginIn 0.5s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes loginIn { from{opacity:0;transform:scale(0.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    .login-logo { text-align: center; margin-bottom: 28px; }
+    .login-logo .big-icon { font-size: 3.5rem; display:block; margin-bottom: 10px; }
+    .login-logo h1 { font-size: 1.6rem; font-weight: 900; color: var(--text-w); }
+    .login-logo p { font-size: 0.85rem; color: var(--text-w2); margin-top: 4px; }
+    .login-error { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 14px; text-align: center; }
+
+    /* ===== FORMS ===== */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-w2); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      font-size: 1rem; color: var(--text-w);
+      transition: all 0.2s;
+      -webkit-appearance: none;
+    }
+    .form-control::placeholder { color: var(--text-w3); }
+    .form-control:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.13); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+    .form-control option { background: #1e3a5f; color: white; }
+    select.form-control { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='rgba(255,255,255,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap .form-control { padding-left: 44px; }
+    .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; pointer-events: none; }
+    .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-w2); font-size: 1rem; cursor: pointer; padding: 4px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 12px 20px; border-radius: 12px;
+      font-weight: 700; font-size: 0.95rem; border: none;
+      cursor: pointer; transition: all 0.18s; font-family: inherit;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: linear-gradient(135deg, #1e3a5f, #2a5298); color: white; box-shadow: 0 4px 14px rgba(30,58,95,0.5); }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(30,58,95,0.7); transform: translateY(-1px); }
+    .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #1a202c; box-shadow: 0 4px 14px rgba(245,158,11,0.4); }
+    .btn-accent:hover { box-shadow: 0 6px 20px rgba(245,158,11,0.6); transform: translateY(-1px); }
+    .btn-success { background: linear-gradient(135deg, #059669, var(--success)); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, var(--danger)); color: white; box-shadow: 0 4px 14px rgba(239,68,68,0.4); }
+    .btn-info { background: linear-gradient(135deg, #0284c7, var(--info)); color: white; }
+    .btn-glass { background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); }
+    .btn-glass:hover { background: rgba(255,255,255,0.20); }
+    .btn-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+    .btn-outline:hover { background: rgba(245,158,11,0.1); }
+    .btn-sm { padding: 7px 13px; font-size: 0.8rem; border-radius: 9px; gap: 5px; }
+    .btn-xs { padding: 5px 10px; font-size: 0.75rem; border-radius: 8px; gap: 4px; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ===== LAYOUT ===== */
+    #app { min-height: 100vh; position: relative; z-index: 1; }
+    .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ===== TOP BAR ===== */
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      padding: 0 16px; height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(15,23,42,0.75);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 12px; }
+    .logo-text { font-size: 1rem; font-weight: 800; color: white; }
+    .logo-sub { font-size: 0.7rem; color: var(--accent); font-weight: 600; }
+    .top-bar-right { display: flex; align-items: center; gap: 8px; }
+
+    /* ===== GLOBAL SEARCH ===== */
+    .global-search-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .global-search-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      display: flex; flex-direction: column;
+      padding: 16px;
+    }
+    .global-search-box {
+      border-radius: 18px;
+      overflow: hidden;
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      max-height: 80vh;
+      display: flex; flex-direction: column;
+    }
+    .global-search-input-wrap {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      background: rgba(30,58,95,0.9);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .global-search-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: white; font-size: 1.1rem; font-family: inherit;
+    }
+    .global-search-input::placeholder { color: rgba(255,255,255,0.35); }
+    .gs-results { overflow-y: auto; max-height: 60vh; }
+    .gs-section-title {
+      padding: 10px 16px 6px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--accent);
+      background: rgba(15,23,42,0.6);
+    }
+    .gs-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .gs-item:hover { background: rgba(255,255,255,0.10); }
+    .gs-item-icon { font-size: 1.3rem; width: 36px; text-align: center; }
+    .gs-item-main { flex: 1; min-width: 0; }
+    .gs-item-name { font-weight: 600; font-size: 0.92rem; }
+    .gs-item-sub { font-size: 0.75rem; color: var(--text-w2); }
+    .gs-item-badge { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+    .gs-empty { text-align: center; padding: 32px; color: var(--text-w2); font-size: 0.9rem; }
+
+    /* ===== USER MENU ===== */
+    .user-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 6px 12px;
+      color: white; font-size: 0.85rem; font-weight: 600;
+    }
+    .user-dropdown {
+      position: absolute; top: 58px; right: 12px;
+      min-width: 200px; border-radius: 14px;
+      overflow: hidden; z-index: 200;
+    }
+    .user-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 16px;
+      color: white; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .user-dropdown-item:last-child { border-bottom: none; }
+    .user-dropdown-item:hover { background: rgba(255,255,255,0.12); }
+    .user-dropdown-item.danger { color: #fca5a5; }
+
+    /* ===== SIDE NAV (Desktop) ===== */
+    .side-nav {
+      width: 230px; min-height: 100vh;
+      position: sticky; top: 0;
+      display: flex; flex-direction: column;
+      padding: 0 0 20px;
+      background: rgba(15,23,42,0.7);
+      backdrop-filter: blur(24px);
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .side-brand {
+      display: flex; align-items: center; gap: 12px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 10px;
+    }
+    .side-brand-icon { font-size: 1.8rem; }
+    .side-brand-name { font-weight: 900; font-size: 1rem; }
+    .side-brand-sub { font-size: 0.7rem; color: var(--accent); font-weight: 600; }
+    .side-nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; color: var(--text-w2);
+      font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.18s;
+      border-left: 3px solid transparent; margin: 1px 0;
+    }
+    .side-nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
+    .side-nav-item.active {
+      background: rgba(245,158,11,0.12);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+    .side-nav-icon { font-size: 1.2rem; width: 22px; text-align: center; }
+    .side-user-section {
+      margin-top: auto; padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ===== BOTTOM NAV (Mobile) ===== */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: var(--nav-h); z-index: 100;
+      display: flex;
+      background: rgba(15,23,42,0.92);
+      backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(255,255,255,0.10);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      color: var(--text-w3); padding: 8px 4px;
+      cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item.active::after {
+      content: ''; position: absolute; top: 0;
+      left: 25%; right: 25%; height: 2px;
+      background: var(--accent); border-radius: 0 0 3px 3px;
+    }
+    .nav-icon { font-size: 1.3rem; }
+    .nav-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      flex: 1; padding: 18px 16px;
+      padding-bottom: calc(var(--nav-h) + 18px);
+      max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+    .page-title { font-size: 1.4rem; font-weight: 900; }
+    .page-subtitle { font-size: 0.78rem; color: var(--text-w2); margin-top: 2px; }
+
+    /* ===== STAT CARDS ===== */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .stat-card {
+      border-radius: 16px; padding: 16px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card-inner { position: relative; z-index: 1; }
+    .stat-glow { position: absolute; inset: 0; opacity: 0.15; }
+    .stat-card.green .stat-glow { background: radial-gradient(circle at top right, #10b981, transparent 70%); }
+    .stat-card.blue .stat-glow { background: radial-gradient(circle at top right, #38bdf8, transparent 70%); }
+    .stat-card.orange .stat-glow { background: radial-gradient(circle at top right, #f59e0b, transparent 70%); }
+    .stat-card.red .stat-glow { background: radial-gradient(circle at top right, #ef4444, transparent 70%); }
+    .stat-card.purple .stat-glow { background: radial-gradient(circle at top right, #a78bfa, transparent 70%); }
+    .stat-icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .stat-val { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+    .stat-lbl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-w2); margin-top: 5px; }
+    .stat-trend { font-size: 0.75rem; margin-top: 4px; color: var(--text-w2); }
+
+    /* ===== GLASS CARD ===== */
+    .g-card { border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+
+    /* ===== SEARCH BAR ===== */
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    .search-input {
+      width: 100%; padding: 12px 14px 12px 44px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 12px; font-size: 0.95rem;
+      color: white; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .search-input::placeholder { color: var(--text-w3); }
+    .search-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.12); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--text-w3); pointer-events: none; }
+
+    /* ===== ADVANCED SEARCH PANEL ===== */
+    .adv-search-toggle {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; font-weight: 600; color: var(--text-w2);
+      cursor: pointer; padding: 4px 0; margin-bottom: 8px;
+    }
+    .adv-search-toggle:hover { color: var(--accent); }
+    .adv-panel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px; padding: 14px;
+      margin-bottom: 14px; display: none;
+    }
+    .adv-panel.open { display: block; animation: fadeSlide 0.2s ease; }
+    @keyframes fadeSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    .adv-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .adv-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* ===== FILTER PILLS ===== */
+    .filter-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+    .filter-pills::-webkit-scrollbar { display: none; }
+    .pill {
+      padding: 6px 14px; border-radius: 99px;
+      font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      color: var(--text-w2); cursor: pointer; transition: all 0.15s;
+    }
+    .pill:hover { background: rgba(255,255,255,0.14); color: white; }
+    .pill.active { background: var(--accent); color: #1a202c; border-color: var(--accent); }
+
+    /* ===== PRODUCT ITEMS ===== */
+    .product-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px; margin-bottom: 10px; border-radius: 14px;
+    }
+    .product-icon { font-size: 1.8rem; width: 44px; text-align: center; }
+    .product-name { font-weight: 700; font-size: 0.95rem; }
+    .product-meta { font-size: 0.75rem; color: var(--text-w2); margin-top: 2px; }
+    .product-price { font-weight: 800; color: var(--accent); font-size: 1rem; white-space: nowrap; }
+    .product-actions { display: flex; flex-direction: column; gap: 5px; }
+    .stock-ok { color: var(--success); }
+    .stock-low { color: #f87171; }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 99px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    }
+    .badge-warning { background: rgba(245,158,11,0.2); color: var(--accent); border: 1px solid rgba(245,158,11,0.3); }
+    .badge-danger { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-success { background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-info { background: rgba(56,189,248,0.2); color: var(--info); border: 1px solid rgba(56,189,248,0.3); }
+
+    /* ===== POS ===== */
+    .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 280px; overflow-y: auto; }
+    .product-btn {
+      border-radius: 14px; padding: 13px 11px;
+      text-align: left; transition: all 0.15s; border: 1.5px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06); color: white;
+    }
+    .product-btn:hover { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.4); }
+    .product-btn:active { transform: scale(0.96); }
+    .product-btn:disabled { opacity: 0.35; pointer-events: none; }
+    .pb-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+    .pb-price { color: var(--accent); font-weight: 800; font-size: 0.92rem; }
+    .pb-stock { font-size: 0.7rem; color: var(--text-w2); margin-top: 2px; }
+    .pb-cat { font-size: 0.7rem; color: var(--text-w3); }
+
+    /* ===== CART ===== */
+    .cart-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-name { flex: 1; font-weight: 600; font-size: 0.88rem; }
+    .cart-price { font-size: 0.75rem; color: var(--text-w2); }
+    .cart-qty { display: flex; align-items: center; gap: 6px; }
+    .qty-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,255,255,0.10); color: white;
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty-btn:hover { background: rgba(245,158,11,0.25); }
+    .qty-val { min-width: 22px; text-align: center; font-weight: 800; }
+    .cart-total { font-weight: 800; color: var(--accent); white-space: nowrap; }
+    .cart-remove { color: #f87171; background: none; border: none; font-size: 1rem; }
+
+    /* ===== TOTALS ===== */
+    .total-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; }
+    .total-row.grand { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 6px; padding-top: 13px; }
+    .total-label { color: var(--text-w2); font-size: 0.88rem; }
+    .total-value { font-weight: 800; font-size: 1rem; }
+    .change-val { color: var(--success); font-size: 1.3rem; font-weight: 900; }
+    .change-negative { color: #f87171; }
+
+    /* ===== TXN ITEMS ===== */
+    .txn-item { display: flex; align-items: center; gap: 12px; padding: 13px; margin-bottom: 8px; border-radius: 14px; }
+    .txn-icon { font-size: 1.4rem; }
+    .txn-info { flex: 1; min-width: 0; }
+    .txn-id { font-size: 0.72rem; color: var(--text-w3); }
+    .txn-desc { font-size: 0.82rem; color: var(--text-w2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .txn-amount { font-weight: 900; color: var(--success); font-size: 1rem; white-space: nowrap; }
+    .txn-time { font-size: 0.7rem; color: var(--text-w3); }
+
+    /* ===== LOW STOCK ===== */
+    .ls-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .ls-item:last-child { border-bottom: none; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .modal-box {
+      width: 100%; max-width: 520px; max-height: 90vh;
+      overflow-y: auto; border-radius: 24px 24px 0 0; padding: 26px 22px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      animation: slideUp 0.28s cubic-bezier(.175,.885,.32,1.1);
+    }
+    @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; color: white; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+
+    /* ===== ALERTS ===== */
+    .alert { padding: 11px 14px; border-radius: 10px; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .alert-warning { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+    .alert-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .alert-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 14px); left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; padding: 11px 22px; border-radius: 99px;
+      font-size: 0.88rem; font-weight: 600; z-index: 400;
+      white-space: nowrap; backdrop-filter: blur(12px);
+      animation: toastIn 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(16px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state { text-align: center; padding: 36px 20px; color: var(--text-w2); }
+    .empty-icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .empty-text { font-size: 0.95rem; font-weight: 600; }
+
+    /* ===== SECTION DIVIDER ===== */
+    .section-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 4px; }
+    .section-hdr-title { font-size: 1rem; font-weight: 800; }
+
+    /* ===== REPORT ROW ===== */
+    .report-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); gap: 10px; }
+    .report-row:last-child { border-bottom: none; }
+    .report-time { font-size: 0.75rem; color: var(--text-w3); min-width: 68px; }
+    .report-desc { flex: 1; font-size: 0.85rem; font-weight: 600; }
+    .report-items { font-size: 0.73rem; color: var(--text-w2); }
+    .report-amount { font-weight: 800; color: var(--success); }
+
+    /* ===== HIGHLIGHT ===== */
+    .highlight { background: rgba(245,158,11,0.3); border-radius: 3px; padding: 0 2px; }
+
+    /* ===== LOADING ===== */
+    .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; gap: 14px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ===== PWA BTN ===== */
+    .pwa-btn { padding: 6px 12px; border-radius: 8px; background: var(--accent); color: #1a202c; font-size: 0.78rem; font-weight: 700; display: none; }
+    .pwa-btn.show { display: block; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (min-width: 600px) {
+      .stat-grid { grid-template-columns: repeat(4, 1fr); }
+      .product-grid { grid-template-columns: repeat(3, 1fr); }
+      .modal-overlay { align-items: center; }
+      .modal-box { border-radius: 24px; }
+    }
+    @media (min-width: 900px) {
+      .app-shell { flex-direction: row; }
+      .bottom-nav { display: none; }
+      .main-content { padding: 24px; padding-bottom: 24px; }
+      .desktop-layout { display: flex; flex-direction: row; gap: 0; }
+      .side-nav-visible { display: flex; flex-direction: column; }
+    }
+    @media (max-width: 899px) {
+      .side-nav { display: none !important; }
+      .top-bar { display: flex !important; }
+    }
+    @media (min-width: 900px) {
+      .top-bar { display: none; }
+      .app-shell > .top-bar { display: none; }
+    }
+
+    /* ===== SALE RECEIPT ===== */
+    .receipt-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 0.88rem; }
+    .receipt-line:last-child { border-bottom: none; }
+    .receipt-total { display: flex; justify-content: space-between; padding: 12px 0 6px; font-size: 1.2rem; font-weight: 900; }
+
+    /* ===== DATE RANGE ===== */
+    .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ===== SMOOTH VIEW TRANSITIONS ===== */
+    html { scroll-behavior: smooth; }
+    .page-view { min-height: 60vh; will-change: opacity, transform; }
+    .page-fade-enter-active,
+    .page-fade-leave-active {
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .page-fade-enter-from,
+    .page-fade-leave-to {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    .page-fade-enter-to,
+    .page-fade-leave-from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bg-glow::before, .bg-glow::after,
+      .login-card, .modal-box, .toast,
+      .page-fade-enter-active, .page-fade-leave-active {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div id="app">
+
+  <!-- ===== LOGIN PAGE ===== -->
+  <div class="login-wrap" v-if="!isLoggedIn">
+    <div class="login-card glass">
+      <div class="login-logo">
+        <span class="big-icon">🏪</span>
+        <h1>HardwareStore ERP</h1>
+        <p>Offline Business Management System</p>
+      </div>
+      <div class="login-error" v-if="loginError">{{ loginError }}</div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" class="form-control" v-model="loginUser" placeholder="Enter username" @keyup.enter="doLogin" autocomplete="username" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input :type="showLoginPw ? 'text' : 'password'" class="form-control" v-model="loginPass" placeholder="Enter password" @keyup.enter="doLogin" autocomplete="current-password" />
+          <button class="password-toggle" @click="showLoginPw=!showLoginPw">{{ showLoginPw ? '🙈' : '👁' }}</button>
+        </div>
+      </div>
+      <button class="btn btn-accent btn-full" style="margin-top:6px;padding:15px;font-size:1rem;" @click="doLogin">
+        🔓 Sign In
+      </button>
+      <div style="text-align:center;margin-top:14px;font-size:0.78rem;color:var(--text-w3)">
+        Default: admin / admin
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div class="app-shell" v-if="isLoggedIn">
+
+    <!-- Side Nav Desktop -->
+    <nav class="side-nav" v-if="!isMobile">
+      <div class="side-brand">
+        <span class="side-brand-icon">🏪</span>
+        <div>
+          <div class="side-brand-name">HW Store ERP</div>
+          <div class="side-brand-sub">● Offline Ready</div>
+        </div>
+      </div>
+
+      <!-- Global Search in sidenav -->
+      <div style="padding:0 12px 12px">
+        <div class="search-wrap" style="margin-bottom:0">
+          <span class="search-icon">🔍</span>
+          <input type="search" class="search-input" v-model="globalSearch" placeholder="Global search..." @focus="showGlobalSearch=true" />
+        </div>
+      </div>
+
+      <div class="side-nav-item" v-for="tab in tabs" :key="tab.id"
+        :class="{ active: currentTab === tab.id }"
+        @click="currentTab = tab.id"
+      >
+        <span class="side-nav-icon">{{ tab.icon }}</span>
+        {{ tab.label }}
+      </div>
+
+      <div class="side-user-section">
+        <div style="font-size:0.75rem;color:var(--text-w3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">Signed in as</div>
+        <div style="font-weight:700;color:white;font-size:0.9rem;margin-bottom:12px;">👤 {{ currentUser }}</div>
+        <button class="btn btn-glass btn-sm btn-full" style="margin-bottom:8px" @click="openChangePassword">🔑 Change Password</button>
+        <button class="btn btn-danger btn-sm btn-full" @click="doLogout">🚪 Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- App Body -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+
+      <!-- Top Bar (Mobile only) -->
+      <div class="top-bar">
+        <div class="top-bar-left">
+          <span style="font-size:1.5rem">🏪</span>
+          <div>
+            <div class="logo-text">HW Store ERP</div>
+            <div class="logo-sub">● Offline</div>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <button class="global-search-btn" @click="showGlobalSearch=true">🔍</button>
+          <button class="pwa-btn" :class="{show: deferredPrompt}" @click="installPWA">📲</button>
+          <div style="position:relative">
+            <button class="user-btn" @click="userMenuOpen=!userMenuOpen">
+              👤 {{ currentUser }} ▾
+            </button>
+            <div class="user-dropdown glass-dark" v-if="userMenuOpen">
+              <div class="user-dropdown-item" @click="openChangePassword();userMenuOpen=false">🔑 Change Password</div>
+              <div class="user-dropdown-item danger" @click="doLogout">🚪 Sign Out</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div v-if="loading" class="loading-wrap">
+          <div class="spinner"></div>
+          <div style="color:var(--text-w2);font-weight:600">Loading data...</div>
+        </div>
+
+        <transition name="page-fade" mode="out-in" v-else>
+          <div :key="currentTab" class="page-view">
+        <!-- ===== DASHBOARD ===== -->
+        <div v-if="currentTab === 'dashboard'">
+          <div class="page-header">
+            <div>
+              <div class="page-title">📊 Dashboard</div>
+              <div class="page-subtitle">{{ todayStr }}</div>
+            </div>
+            <button class="btn btn-glass btn-sm" @click="currentTab='reports'">📋 Reports →</button>
+          </div>
+
+          <!-- Date filter for dashboard -->
+          <div class="g-card glass" style="margin-bottom:14px">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-w2);margin-bottom:10px">📅 Filter Period</div>
+            <div class="date-range">
+              <div>
+                <div class="form-label" style="font-size:0.72rem">From</div>
+                <input type="date" class="form-control" v-model="dashDateFrom" style="padding:9px 12px;font-size:0.88rem" />
+              </div>
+              <div>
+                <div class="form-label" style="font-size:0.72rem">To</div>
+                <input type="date" class="form-control" v-model="dashDateTo" style="padding:9px 12px;font-size:0.88rem" />
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button class="pill" :class="{active:dashPeriod==='today'}" @click="setDashPeriod('today')">Today</button>
+              <button class="pill" :class="{active:dashPeriod==='week'}" @click="setDashPeriod('week')">This Week</button>
+              <button class="pill" :class="{active:dashPeriod==='month'}" @click="setDashPeriod('month')">This Month</button>
+              <button class="pill" :class="{active:dashPeriod==='all'}" @click="setDashPeriod('all')">All Time</button>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card glass green">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-icon">💰</div>
+                <div class="stat-val">₱{{ formatNum(dashSalesTotal) }}</div>
+                <div class="stat-lbl">Sales Revenue</div>
+              </div>
+            </div>
+            <div class="stat-card glass blue">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-icon">📦</div>
+                <div class="stat-val">{{ products.length }}</div>
+                <div class="stat-lbl">Products</div>
+              </div>
+            </div>
+            <div class="stat-card glass red">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-val">{{ lowStockProducts.length }}</div>
+                <div class="stat-lbl">Low Stock</div>
+              </div>
+            </div>
+            <div class="stat-card glass orange">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-icon">🧾</div>
+                <div class="stat-val">{{ dashTxns.length }}</div>
+                <div class="stat-lbl">Transactions</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Low Stock Alert -->
+          <div v-if="lowStockProducts.length > 0">
+            <div class="section-hdr">
+              <div class="section-hdr-title">⚠️ Low Stock Items</div>
+              <span class="badge badge-danger">{{ lowStockProducts.length }}</span>
+            </div>
+            <div class="g-card glass" style="padding:12px">
+              <div class="ls-item" v-for="p in lowStockProducts" :key="p.id">
+                <span>{{ categoryIcon(p.category) }} <span style="font-weight:600">{{ p.name }}</span></span>
+                <span class="stock-low" style="font-weight:700">{{ p.stock }} left</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Txns with search -->
+          <div class="section-hdr">
+            <div class="section-hdr-title">🧾 Recent Transactions</div>
+            <span class="badge badge-info">{{ dashTxns.length }}</span>
+          </div>
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" class="search-input" v-model="dashSearch" placeholder="Search transactions..." />
+          </div>
+          <div v-if="filteredDashTxns.length === 0" class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <div class="empty-text">No transactions found</div>
+          </div>
+          <div class="txn-item glass" v-for="txn in filteredDashTxns.slice(0,15)" :key="txn.id">
+            <span class="txn-icon">🧾</span>
+            <div class="txn-info">
+              <div class="txn-id">#{{ txn.id.slice(-6).toUpperCase() }} · {{ formatDate(txn.createdAt) }}</div>
+              <div class="txn-desc">{{ txn.items.map(i=>i.name+'×'+i.qty).join(', ') }}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="txn-amount">₱{{ formatNum(txn.total) }}</div>
+              <div class="txn-time">{{ formatTime(txn.createdAt) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== INVENTORY ===== -->
+        <div v-else-if="currentTab === 'inventory'">
+          <div class="page-header">
+            <div class="page-title">📦 Inventory</div>
+            <button class="btn btn-accent btn-sm" @click="openProductModal()">➕ Add Product</button>
+          </div>
+
+          <!-- Search -->
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" class="search-input" v-model="invSearch" placeholder="Search by name, category..." />
+          </div>
+
+          <!-- Advanced Search Toggle -->
+          <div class="adv-search-toggle" @click="invAdvOpen=!invAdvOpen">
+            <span>⚙️</span> Advanced Search {{ invAdvOpen ? '▲' : '▼' }}
+          </div>
+          <div class="adv-panel" :class="{open:invAdvOpen}">
+            <div class="adv-row" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Min Price (₱)</div>
+                <input type="number" class="form-control" v-model.number="invMinPrice" placeholder="0" />
+              </div>
+              <div>
+                <div class="form-label">Max Price (₱)</div>
+                <input type="number" class="form-control" v-model.number="invMaxPrice" placeholder="Any" />
+              </div>
+            </div>
+            <div class="adv-row" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Min Stock</div>
+                <input type="number" class="form-control" v-model.number="invMinStock" placeholder="0" />
+              </div>
+              <div>
+                <div class="form-label">Max Stock</div>
+                <input type="number" class="form-control" v-model.number="invMaxStock" placeholder="Any" />
+              </div>
+            </div>
+            <div class="adv-row">
+              <div>
+                <div class="form-label">Stock Status</div>
+                <select class="form-control" v-model="invStockStatus">
+                  <option value="">All</option>
+                  <option value="low">Low Stock Only</option>
+                  <option value="ok">In Stock Only</option>
+                  <option value="out">Out of Stock</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label">Sort By</div>
+                <select class="form-control" v-model="invSort">
+                  <option value="name">Name A-Z</option>
+                  <option value="price_asc">Price Low-High</option>
+                  <option value="price_desc">Price High-Low</option>
+                  <option value="stock_asc">Stock Low-High</option>
+                  <option value="stock_desc">Stock High-Low</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-glass btn-sm" style="margin-top:10px" @click="resetInvFilters">↺ Reset Filters</button>
+          </div>
+
+          <!-- Category Pills -->
+          <div class="filter-pills">
+            <button class="pill" :class="{active:invCategory==='all'}" @click="invCategory='all'">🗂 All ({{ products.length }})</button>
+            <button class="pill" v-for="c in categories" :key="c"
+              :class="{active:invCategory===c}" @click="invCategory=c">
+              {{ categoryIcon(c) }} {{ capitalize(c) }} ({{ products.filter(p=>p.category===c).length }})
+            </button>
+          </div>
+
+          <div style="font-size:0.78rem;color:var(--text-w2);margin-bottom:10px;">
+            Showing {{ filteredProducts.length }} of {{ products.length }} products
+          </div>
+
+          <div v-if="filteredProducts.length === 0" class="empty-state">
+            <div class="empty-icon">📦</div><div class="empty-text">No products found</div>
+          </div>
+
+          <div class="product-item glass" v-for="p in filteredProducts" :key="p.id">
+            <div class="product-icon">{{ categoryIcon(p.category) }}</div>
+            <div style="flex:1;min-width:0">
+              <div class="product-name">{{ p.name }}</div>
+              <div class="product-meta">{{ capitalize(p.category) }} &bull; Stock: <span :class="p.stock <= (p.lowStockAt||5) ? 'stock-low':'stock-ok'">{{ p.stock }}</span></div>
+            </div>
+            <div style="text-align:right;margin-right:8px">
+              <div class="product-price">₱{{ formatNum(p.price) }}</div>
+              <div v-if="p.stock <= (p.lowStockAt||5)" class="badge badge-warning" style="margin-top:3px">LOW</div>
+              <div v-else class="badge badge-success" style="margin-top:3px">OK</div>
+            </div>
+            <div class="product-actions">
+              <button class="btn btn-glass btn-xs" @click="openProductModal(p)">✏️ Edit</button>
+              <button class="btn btn-danger btn-xs" @click="deleteProduct(p.id)">🗑 Del</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== POS ===== -->
+        <div v-else-if="currentTab === 'pos'">
+          <div class="page-header">
+            <div class="page-title">🛒 Point of Sale</div>
+            <button v-if="cart.length>0" class="btn btn-danger btn-sm" @click="clearCart">✕ Clear</button>
+          </div>
+
+          <!-- Product Search -->
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" class="search-input" v-model="posSearch" placeholder="Search product by name or category..." />
+          </div>
+
+          <!-- POS Category filter -->
+          <div class="filter-pills">
+            <button class="pill" :class="{active:posCategory==='all'}" @click="posCategory='all'">All</button>
+            <button class="pill" v-for="c in categories" :key="c" :class="{active:posCategory===c}" @click="posCategory=c">{{ categoryIcon(c) }} {{ capitalize(c) }}</button>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="product-grid" style="margin-bottom:14px">
+            <button class="product-btn" v-for="p in posProducts" :key="p.id" @click="addToCart(p)" :disabled="p.stock<=0">
+              <div style="font-size:1.3rem;margin-bottom:4px">{{ categoryIcon(p.category) }}</div>
+              <div class="pb-name">{{ p.name }}</div>
+              <div class="pb-price">₱{{ formatNum(p.price) }}</div>
+              <div class="pb-stock" :class="p.stock<=0?'stock-low':''">{{ p.stock<=0 ? 'Out of stock' : 'Stock: '+p.stock }}</div>
+            </button>
+            <div v-if="posProducts.length===0" style="grid-column:1/-1" class="empty-state" style="padding:20px">
+              <div class="empty-icon">🔍</div><div class="empty-text">No products match</div>
+            </div>
+          </div>
+
+          <!-- Cart -->
+          <div class="g-card glass" v-if="cart.length > 0" style="margin-bottom:12px">
+            <div style="font-weight:800;margin-bottom:10px;font-size:1rem">🛒 Cart <span class="badge badge-info">{{ cart.length }}</span></div>
+            <div class="cart-item" v-for="item in cart" :key="item.id">
+              <div style="flex:1;min-width:0">
+                <div class="cart-name">{{ item.name }}</div>
+                <div class="cart-price">₱{{ formatNum(item.price) }} each</div>
+              </div>
+              <div class="cart-qty">
+                <button class="qty-btn" @click="changeQty(item,-1)">−</button>
+                <span class="qty-val">{{ item.qty }}</span>
+                <button class="qty-btn" @click="changeQty(item,1)">+</button>
+              </div>
+              <div class="cart-total" style="margin-left:8px">₱{{ formatNum(item.price*item.qty) }}</div>
+              <button class="cart-remove" @click="removeFromCart(item.id)">✕</button>
+            </div>
+            <div class="total-row grand">
+              <span style="font-size:1rem;font-weight:800">TOTAL</span>
+              <span style="font-size:1.6rem;font-weight:900;color:var(--accent)">₱{{ formatNum(cartTotal) }}</span>
+            </div>
+          </div>
+
+          <!-- Payment -->
+          <div class="g-card glass" v-if="cart.length > 0">
+            <div style="font-weight:800;margin-bottom:12px">💵 Payment</div>
+            <div class="form-group">
+              <label class="form-label">Payment Amount (₱)</label>
+              <input type="number" class="form-control" v-model.number="paymentAmount" placeholder="Enter amount paid" min="0" inputmode="decimal" style="font-size:1.2rem;font-weight:700" />
+            </div>
+            <div class="total-row" v-if="paymentAmount > 0">
+              <span class="total-label">Change</span>
+              <span :class="['change-val', paymentAmount < cartTotal ? 'change-negative':'']">
+                {{ paymentAmount < cartTotal ? '❌' : '✅' }} ₱{{ formatNum(Math.abs(paymentAmount - cartTotal)) }}
+              </span>
+            </div>
+            <button class="btn btn-success btn-full" style="margin-top:12px;padding:16px;font-size:1.05rem"
+              @click="completeSale" :disabled="cart.length===0 || paymentAmount < cartTotal">
+              ✅ Complete Sale
+            </button>
+          </div>
+
+          <div v-if="cart.length===0" class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <div class="empty-text">Tap a product to add to cart</div>
+          </div>
+        </div>
+
+        <!-- ===== PURCHASES ===== -->
+        <div v-else-if="currentTab === 'purchases'">
+          <div class="page-header">
+            <div class="page-title">📥 Stock In</div>
+            <button class="btn btn-accent btn-sm" @click="openPurchaseModal()">➕ Add Stock</button>
+          </div>
+
+          <!-- Search & Date Filter -->
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" class="search-input" v-model="purSearch" placeholder="Search by product name..." />
+          </div>
+
+          <div class="adv-search-toggle" @click="purAdvOpen=!purAdvOpen">
+            <span>⚙️</span> Advanced Filters {{ purAdvOpen ? '▲' : '▼' }}
+          </div>
+          <div class="adv-panel" :class="{open:purAdvOpen}">
+            <div class="date-range" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Date From</div>
+                <input type="date" class="form-control" v-model="purDateFrom" />
+              </div>
+              <div>
+                <div class="form-label">Date To</div>
+                <input type="date" class="form-control" v-model="purDateTo" />
+              </div>
+            </div>
+            <div class="adv-row" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Min Cost (₱)</div>
+                <input type="number" class="form-control" v-model.number="purMinCost" placeholder="0" />
+              </div>
+              <div>
+                <div class="form-label">Max Cost (₱)</div>
+                <input type="number" class="form-control" v-model.number="purMaxCost" placeholder="Any" />
+              </div>
+            </div>
+            <div class="adv-row">
+              <div>
+                <div class="form-label">Category</div>
+                <select class="form-control" v-model="purCategory">
+                  <option value="">All Categories</option>
+                  <option v-for="c in categories" :key="c" :value="c">{{ capitalize(c) }}</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label">Sort By</div>
+                <select class="form-control" v-model="purSort">
+                  <option value="date_desc">Newest First</option>
+                  <option value="date_asc">Oldest First</option>
+                  <option value="cost_desc">Cost High-Low</option>
+                  <option value="cost_asc">Cost Low-High</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-glass btn-sm" style="margin-top:10px" @click="resetPurFilters">↺ Reset</button>
+          </div>
+
+          <div style="font-size:0.78rem;color:var(--text-w2);margin-bottom:10px">
+            Showing {{ filteredPurchases.length }} records · Total Cost: ₱{{ formatNum(filteredPurchases.reduce((s,p)=>s+p.totalCost,0)) }}
+          </div>
+
+          <div v-if="filteredPurchases.length===0" class="empty-state">
+            <div class="empty-icon">📥</div><div class="empty-text">No purchases found</div>
+          </div>
+          <div class="txn-item glass" v-for="pu in filteredPurchases" :key="pu.id">
+            <span class="txn-icon">📥</span>
+            <div class="txn-info">
+              <div style="font-weight:700;font-size:0.9rem">{{ pu.productName }}</div>
+              <div class="txn-desc">Qty: +{{ pu.qty }} &bull; Cost/unit: ₱{{ formatNum(pu.cost) }}</div>
+              <div class="txn-id">{{ formatDate(pu.createdAt) }} {{ formatTime(pu.createdAt) }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:900;color:var(--info);font-size:1rem">₱{{ formatNum(pu.totalCost) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== REPORTS ===== -->
+        <div v-else-if="currentTab === 'reports'">
+          <div class="page-header">
+            <div class="page-title">📋 Reports</div>
+            <button class="btn btn-accent btn-sm" @click="exportCSV">📥 Export CSV</button>
+          </div>
+
+          <!-- Search -->
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" class="search-input" v-model="repSearch" placeholder="Search transactions, items..." />
+          </div>
+
+          <!-- Advanced Filters -->
+          <div class="adv-search-toggle" @click="repAdvOpen=!repAdvOpen">
+            <span>⚙️</span> Advanced Filters {{ repAdvOpen ? '▲' : '▼' }}
+          </div>
+          <div class="adv-panel" :class="{open:repAdvOpen}">
+            <div class="date-range" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Date From</div>
+                <input type="date" class="form-control" v-model="repDateFrom" />
+              </div>
+              <div>
+                <div class="form-label">Date To</div>
+                <input type="date" class="form-control" v-model="repDateTo" />
+              </div>
+            </div>
+            <div class="adv-row" style="margin-bottom:10px">
+              <div>
+                <div class="form-label">Min Amount (₱)</div>
+                <input type="number" class="form-control" v-model.number="repMinAmount" placeholder="0" />
+              </div>
+              <div>
+                <div class="form-label">Max Amount (₱)</div>
+                <input type="number" class="form-control" v-model.number="repMaxAmount" placeholder="Any" />
+              </div>
+            </div>
+            <div class="adv-row">
+              <div>
+                <div class="form-label">Sort By</div>
+                <select class="form-control" v-model="repSort">
+                  <option value="date_desc">Newest First</option>
+                  <option value="date_asc">Oldest First</option>
+                  <option value="amount_desc">Amount High-Low</option>
+                  <option value="amount_asc">Amount Low-High</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label">Quick Date</div>
+                <select class="form-control" v-model="repQuick" @change="applyRepQuick">
+                  <option value="">Custom</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-glass btn-sm" style="margin-top:10px" @click="resetRepFilters">↺ Reset</button>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:14px">
+            <div class="stat-card glass green">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-val" style="font-size:1.2rem">₱{{ formatNum(repSalesTotal) }}</div>
+                <div class="stat-lbl">Total Sales</div>
+              </div>
+            </div>
+            <div class="stat-card glass blue">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-val" style="font-size:1.2rem">{{ filteredRepTxns.length }}</div>
+                <div class="stat-lbl">Transactions</div>
+              </div>
+            </div>
+            <div class="stat-card glass orange">
+              <div class="stat-glow"></div>
+              <div class="stat-card-inner">
+                <div class="stat-val" style="font-size:1.2rem">{{ repItemsTotal }}</div>
+                <div class="stat-lbl">Items Sold</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:0.78rem;color:var(--text-w2);margin-bottom:10px">
+            Showing {{ filteredRepTxns.length }} transactions
+          </div>
+
+          <div class="g-card glass" style="padding:12px">
+            <div v-if="filteredRepTxns.length===0" class="empty-state" style="padding:20px">
+              <div class="empty-icon">📋</div><div class="empty-text">No transactions found</div>
+            </div>
+            <div class="report-row" v-for="txn in filteredRepTxns" :key="txn.id">
+              <div class="report-time">{{ formatDate(txn.createdAt) }}<br>{{ formatTime(txn.createdAt) }}</div>
+              <div class="report-desc">
+                <div>#{{ txn.id.slice(-6).toUpperCase() }}</div>
+                <div class="report-items">{{ txn.items.map(i=>i.name+'×'+i.qty).join(', ') }}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="report-amount">₱{{ formatNum(txn.total) }}</div>
+                <div style="font-size:0.7rem;color:var(--text-w3)">Paid: ₱{{ formatNum(txn.payment) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </transition>
+
+      </main>
+
+      <!-- Bottom Nav Mobile -->
+      <nav class="bottom-nav" v-if="isMobile">
+        <div class="nav-item" v-for="tab in tabs" :key="tab.id"
+          :class="{active:currentTab===tab.id}"
+          @click="currentTab=tab.id">
+          <span class="nav-icon">{{ tab.icon }}</span>
+          <span class="nav-label">{{ tab.label }}</span>
+        </div>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ===== GLOBAL SEARCH OVERLAY ===== -->
+  <div class="global-search-overlay" v-if="showGlobalSearch" @click.self="showGlobalSearch=false">
+    <div style="height:40px"></div>
+    <div class="global-search-box glass-dark">
+      <div class="global-search-input-wrap">
+        <span style="font-size:1.1rem">🔍</span>
+        <input ref="globalSearchInput" type="search" class="global-search-input" v-model="globalSearch" placeholder="Search everything — products, sales, purchases..." autofocus />
+        <button style="background:none;border:none;color:var(--text-w2);font-size:1.1rem;cursor:pointer" @click="showGlobalSearch=false">✕</button>
+      </div>
+      <div class="gs-results">
+        <div v-if="!globalSearch" style="padding:24px;text-align:center;color:var(--text-w2)">
+          <div style="font-size:2rem;margin-bottom:8px">🔍</div>
+          Start typing to search across all data...
+        </div>
+        <div v-else-if="globalResults.total === 0" class="gs-empty">
+          No results for "{{ globalSearch }}"
+        </div>
+        <template v-else>
+          <!-- Products -->
+          <template v-if="globalResults.products.length > 0">
+            <div class="gs-section-title">📦 Products ({{ globalResults.products.length }})</div>
+            <div class="gs-item" v-for="p in globalResults.products" :key="'gp'+p.id" @click="gotoProduct(p)">
+              <span class="gs-item-icon">{{ categoryIcon(p.category) }}</span>
+              <div class="gs-item-main">
+                <div class="gs-item-name" v-html="highlight(p.name, globalSearch)"></div>
+                <div class="gs-item-sub">{{ capitalize(p.category) }} · Stock: {{ p.stock }}</div>
+              </div>
+              <span class="gs-item-badge" :class="p.stock<=(p.lowStockAt||5)?'stock-low':'stock-ok'">₱{{ formatNum(p.price) }}</span>
+            </div>
+          </template>
+          <!-- Sales -->
+          <template v-if="globalResults.sales.length > 0">
+            <div class="gs-section-title">🧾 Sales ({{ globalResults.sales.length }})</div>
+            <div class="gs-item" v-for="s in globalResults.sales" :key="'gs'+s.id" @click="gotoSale(s)">
+              <span class="gs-item-icon">🧾</span>
+              <div class="gs-item-main">
+                <div class="gs-item-name">#{{ s.id.slice(-6).toUpperCase() }} · {{ formatDate(s.createdAt) }}</div>
+                <div class="gs-item-sub" v-html="highlight(s.items.map(i=>i.name+'×'+i.qty).join(', '), globalSearch)"></div>
+              </div>
+              <span class="gs-item-badge" style="color:var(--success)">₱{{ formatNum(s.total) }}</span>
+            </div>
+          </template>
+          <!-- Purchases -->
+          <template v-if="globalResults.purchases.length > 0">
+            <div class="gs-section-title">📥 Purchases ({{ globalResults.purchases.length }})</div>
+            <div class="gs-item" v-for="p in globalResults.purchases" :key="'gpu'+p.id" @click="gotoPurchase(p)">
+              <span class="gs-item-icon">📥</span>
+              <div class="gs-item-main">
+                <div class="gs-item-name" v-html="highlight(p.productName, globalSearch)"></div>
+                <div class="gs-item-sub">{{ formatDate(p.createdAt) }} · Qty: +{{ p.qty }}</div>
+              </div>
+              <span class="gs-item-badge" style="color:var(--info)">₱{{ formatNum(p.totalCost) }}</span>
+            </div>
+          </template>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" v-if="toast.show">{{ toast.msg }}</div>
+
+  <!-- ===== PRODUCT MODAL ===== -->
+  <div class="modal-overlay" v-if="showProductModal" @click.self="showProductModal=false">
+    <div class="modal-box">
+      <div class="modal-title">{{ editingProduct ? '✏️ Edit Product' : '➕ Add Product' }}</div>
+      <div class="form-group">
+        <label class="form-label">Product Name *</label>
+        <input type="text" class="form-control" v-model="productForm.name" placeholder="e.g. Common Wire Nails" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select class="form-control" v-model="productForm.category">
+          <option value="">Select category</option>
+          <option v-for="c in categories" :key="c" :value="c">{{ capitalize(c) }}</option>
+        </select>
+      </div>
+      <div class="adv-row">
+        <div class="form-group">
+          <label class="form-label">Price (₱) *</label>
+          <input type="number" class="form-control" v-model.number="productForm.price" placeholder="0.00" min="0" inputmode="decimal" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock Qty *</label>
+          <input type="number" class="form-control" v-model.number="productForm.stock" placeholder="0" min="0" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Low Stock Alert Threshold</label>
+        <input type="number" class="form-control" v-model.number="productForm.lowStockAt" placeholder="5" min="0" inputmode="numeric" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-accent btn-full" @click="saveProduct">💾 Save</button>
+        <button class="btn btn-glass" @click="showProductModal=false">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PURCHASE MODAL ===== -->
+  <div class="modal-overlay" v-if="showPurchaseModal" @click.self="showPurchaseModal=false">
+    <div class="modal-box">
+      <div class="modal-title">📥 Add Stock</div>
+      <div class="form-group">
+        <label class="form-label">Select Product *</label>
+        <select class="form-control" v-model="purchaseForm.productId" @change="onPurchaseProductChange">
+          <option value="">-- Select product --</option>
+          <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} (Stock: {{ p.stock }})</option>
+        </select>
+      </div>
+      <div v-if="purchaseForm.productId">
+        <div class="adv-row">
+          <div class="form-group">
+            <label class="form-label">Qty to Add *</label>
+            <input type="number" class="form-control" v-model.number="purchaseForm.qty" placeholder="0" min="1" inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cost / Unit (₱)</label>
+            <input type="number" class="form-control" v-model.number="purchaseForm.cost" placeholder="0.00" min="0" inputmode="decimal" />
+          </div>
+        </div>
+        <div class="alert alert-success" v-if="purchaseForm.qty > 0">
+          💰 Total Cost: ₱{{ formatNum(purchaseForm.qty * (purchaseForm.cost || 0)) }}
+        </div>
+        <div class="alert alert-warning" v-if="purchaseWillCreateVariant && selectedPurchaseProduct">
+          ℹ️ Cost is different from the current item price of ₱{{ formatNum(selectedPurchaseProduct.price) }}. Saving this restock will create a separate item with price ₱{{ formatNum(purchaseForm.cost || 0) }} so stocks will not conflict.
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-accent btn-full" @click="savePurchase">📥 Add Stock</button>
+        <button class="btn btn-glass" @click="showPurchaseModal=false">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SALE SUCCESS MODAL ===== -->
+  <div class="modal-overlay" v-if="showSaleSuccess" @click.self="closeSaleSuccess">
+    <div class="modal-box" style="text-align:center">
+      <div style="font-size:3.5rem;margin-bottom:8px">✅</div>
+      <div style="font-size:1.4rem;font-weight:900;margin-bottom:20px">Sale Complete!</div>
+      <div class="g-card" style="background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;text-align:left;margin-bottom:16px">
+        <div style="font-size:0.75rem;text-align:center;color:var(--text-w2);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Receipt</div>
+        <div class="receipt-line" v-for="item in lastSale.items" :key="item.id">
+          <span>{{ item.name }} ×{{ item.qty }}</span>
+          <span>₱{{ formatNum(item.price * item.qty) }}</span>
+        </div>
+        <div class="receipt-total">
+          <span>TOTAL</span>
+          <span style="color:var(--accent)">₱{{ formatNum(lastSale.total) }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;color:var(--text-w2);font-size:0.88rem">
+          <span>Payment</span><span>₱{{ formatNum(lastSale.payment) }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:1.1rem;font-weight:800">
+          <span>Change</span><span style="color:var(--success)">₱{{ formatNum(lastSale.change) }}</span>
+        </div>
+      </div>
+      <button class="btn btn-accent btn-full" style="padding:14px;font-size:1rem" @click="closeSaleSuccess">🛒 New Sale</button>
+    </div>
+  </div>
+
+  <!-- ===== CHANGE PASSWORD MODAL ===== -->
+  <div class="modal-overlay" v-if="showChangePw" @click.self="showChangePw=false">
+    <div class="modal-box">
+      <div class="modal-title">🔑 Change Password</div>
+      <div class="alert alert-danger" v-if="changePwError">{{ changePwError }}</div>
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input :type="showCurrPw ? 'text':'password'" class="form-control" v-model="changePwForm.current" placeholder="Enter current password" />
+          <button class="password-toggle" @click="showCurrPw=!showCurrPw">{{ showCurrPw?'🙈':'👁' }}</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔑</span>
+          <input :type="showNewPw ? 'text':'password'" class="form-control" v-model="changePwForm.newPw" placeholder="Enter new password" />
+          <button class="password-toggle" @click="showNewPw=!showNewPw">{{ showNewPw?'🙈':'👁' }}</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">✅</span>
+          <input :type="showConfPw ? 'text':'password'" class="form-control" v-model="changePwForm.confirm" placeholder="Re-enter new password" />
+          <button class="password-toggle" @click="showConfPw=!showConfPw">{{ showConfPw?'🙈':'👁' }}</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-accent btn-full" @click="doChangePassword">🔑 Update Password</button>
+        <button class="btn btn-glass" @click="showChangePw=false">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+
+// ===== IndexedDB =====
+const DB_NAME = 'hwstore_erp_v2';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('products')) {
+        d.createObjectStore('products', { keyPath: 'id' }).createIndex('category', 'category');
+      }
+      if (!d.objectStoreNames.contains('sales')) {
+        d.createObjectStore('sales', { keyPath: 'id' }).createIndex('date', 'date');
+      }
+      if (!d.objectStoreNames.contains('purchases')) {
+        d.createObjectStore('purchases', { keyPath: 'id' }).createIndex('date', 'date');
+      }
+      if (!d.objectStoreNames.contains('settings')) {
+        d.createObjectStore('settings', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+function dbGetAll(store) {
+  return new Promise((r, j) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => r(req.result);
+    req.onerror = () => j(req.error);
+  });
+}
+function dbGet1(store, key) {
+  return new Promise((r, j) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => r(req.result);
+    req.onerror = () => j(req.error);
+  });
+}
+function dbPut(store, item) {
+  return new Promise((r, j) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(item);
+    req.onsuccess = () => r(req.result);
+    req.onerror = () => j(req.error);
+  });
+}
+function dbDelete(store, id) {
+  return new Promise((r, j) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = () => r();
+    req.onerror = () => j(req.error);
+  });
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function toDateStr(ts) { return new Date(ts).toISOString().slice(0,10); }
+
+// ===== Sample Data =====
+const SAMPLE_PRODUCTS = [
+  { id: genId(), name: 'Common Wire Nails 1"', category: 'nails', price: 45, stock: 120, lowStockAt: 10 },
+  { id: genId(), name: 'Common Wire Nails 2"', category: 'nails', price: 55, stock: 80, lowStockAt: 10 },
+  { id: genId(), name: 'Roofing Nails', category: 'nails', price: 75, stock: 3, lowStockAt: 5 },
+  { id: genId(), name: 'Portland Cement (40kg)', category: 'cement', price: 280, stock: 50, lowStockAt: 5 },
+  { id: genId(), name: 'Rapid Set Cement (25kg)', category: 'cement', price: 195, stock: 4, lowStockAt: 5 },
+  { id: genId(), name: 'THHN Wire #12', category: 'electrical', price: 12, stock: 200, lowStockAt: 20 },
+  { id: genId(), name: 'THHN Wire #14', category: 'electrical', price: 9, stock: 150, lowStockAt: 20 },
+  { id: genId(), name: 'Circuit Breaker 20A', category: 'electrical', price: 250, stock: 15, lowStockAt: 3 },
+  { id: genId(), name: 'Outlet (Universal)', category: 'electrical', price: 85, stock: 30, lowStockAt: 5 },
+  { id: genId(), name: 'PVC Pipe 1/2"', category: 'others', price: 95, stock: 40, lowStockAt: 5 },
+  { id: genId(), name: 'Hacksaw Blade', category: 'others', price: 35, stock: 2, lowStockAt: 5 },
+  { id: genId(), name: 'Paint Roller', category: 'others', price: 120, stock: 20, lowStockAt: 3 },
+];
+
+// ===== APP =====
+createApp({
+  setup() {
+    // ===== Auth =====
+    const isLoggedIn = ref(false);
+    const currentUser = ref('admin');
+    const loginUser = ref('');
+    const loginPass = ref('');
+    const loginError = ref('');
+    const showLoginPw = ref(false);
+    const userMenuOpen = ref(false);
+
+    // Credentials stored in localStorage (hashed simply)
+    function getStoredCreds() {
+      try {
+        const raw = localStorage.getItem('hwstore_creds');
+        if (raw) return JSON.parse(raw);
+      } catch {}
+      return { username: 'admin', password: 'admin' };
+    }
+    function saveCreds(u, p) {
+      localStorage.setItem('hwstore_creds', JSON.stringify({ username: u, password: p }));
+    }
+    function checkSession() {
+      const s = localStorage.getItem('hwstore_session');
+      if (s) {
+        const sess = JSON.parse(s);
+        if (sess.user && Date.now() - sess.time < 8 * 3600 * 1000) {
+          isLoggedIn.value = true;
+          currentUser.value = sess.user;
+          return true;
+        }
+      }
+      return false;
+    }
+    function doLogin() {
+      const creds = getStoredCreds();
+      if (loginUser.value.trim() === creds.username && loginPass.value === creds.password) {
+        isLoggedIn.value = true;
+        currentUser.value = loginUser.value.trim();
+        localStorage.setItem('hwstore_session', JSON.stringify({ user: currentUser.value, time: Date.now() }));
+        loginError.value = '';
+        loginUser.value = '';
+        loginPass.value = '';
+      } else {
+        loginError.value = '❌ Invalid username or password';
+      }
+    }
+    function doLogout() {
+      localStorage.removeItem('hwstore_session');
+      isLoggedIn.value = false;
+      userMenuOpen.value = false;
+      loginUser.value = '';
+      loginPass.value = '';
+    }
+
+    // ===== Change Password =====
+    const showChangePw = ref(false);
+    const changePwForm = ref({ current: '', newPw: '', confirm: '' });
+    const changePwError = ref('');
+    const showCurrPw = ref(false);
+    const showNewPw = ref(false);
+    const showConfPw = ref(false);
+    function openChangePassword() {
+      changePwForm.value = { current: '', newPw: '', confirm: '' };
+      changePwError.value = '';
+      showChangePw.value = true;
+      userMenuOpen.value = false;
+    }
+    function doChangePassword() {
+      const creds = getStoredCreds();
+      if (changePwForm.value.current !== creds.password) {
+        changePwError.value = '❌ Current password is incorrect'; return;
+      }
+      if (changePwForm.value.newPw.length < 4) {
+        changePwError.value = '❌ New password must be at least 4 characters'; return;
+      }
+      if (changePwForm.value.newPw !== changePwForm.value.confirm) {
+        changePwError.value = '❌ Passwords do not match'; return;
+      }
+      saveCreds(creds.username, changePwForm.value.newPw);
+      showChangePw.value = false;
+      showToast('✅ Password changed successfully!');
+    }
+
+    // ===== Core State =====
+    const loading = ref(true);
+    const currentTab = ref('dashboard');
+    const isMobile = ref(window.innerWidth < 900);
+    const tabs = [
+      { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+      { id: 'inventory', label: 'Inventory', icon: '📦' },
+      { id: 'pos', label: 'POS', icon: '🛒' },
+      { id: 'purchases', label: 'Purchases', icon: '📥' },
+      { id: 'reports', label: 'Reports', icon: '📋' },
+    ];
+    const categories = ['nails', 'cement', 'electrical', 'others'];
+    const products = ref([]);
+    const sales = ref([]);
+    const purchases = ref([]);
+    const toast = ref({ show: false, msg: '' });
+    const deferredPrompt = ref(null);
+
+    // ===== Global Search =====
+    const showGlobalSearch = ref(false);
+    const globalSearch = ref('');
+    const globalSearchInput = ref(null);
+
+    const globalResults = computed(() => {
+      const q = globalSearch.value.toLowerCase().trim();
+      if (!q) return { products: [], sales: [], purchases: [], total: 0 };
+      const prods = products.value.filter(p =>
+        p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+      ).slice(0, 8);
+      const sls = sales.value.filter(s =>
+        s.id.toLowerCase().includes(q) ||
+        s.items.some(i => i.name.toLowerCase().includes(q)) ||
+        s.date.includes(q)
+      ).slice(0, 8);
+      const purs = purchases.value.filter(p =>
+        p.productName.toLowerCase().includes(q) ||
+        p.date.includes(q)
+      ).slice(0, 6);
+      return { products: prods, sales: sls, purchases: purs, total: prods.length + sls.length + purs.length };
+    });
+
+    function highlight(text, query) {
+      if (!query || !text) return text;
+      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return text.replace(new RegExp(`(${escaped})`, 'gi'), '<span class="highlight">$1</span>');
+    }
+    function gotoProduct(p) { showGlobalSearch.value = false; globalSearch.value = ''; currentTab.value = 'inventory'; }
+    function gotoSale(s) {
+      showGlobalSearch.value = false; globalSearch.value = '';
+      currentTab.value = 'reports';
+      repDateFrom.value = s.date; repDateTo.value = s.date;
+    }
+    function gotoPurchase(p) {
+      showGlobalSearch.value = false; globalSearch.value = '';
+      currentTab.value = 'purchases';
+      purSearch.value = p.productName;
+    }
+
+    watch(showGlobalSearch, async (val) => {
+      if (val) { await nextTick(); if (globalSearchInput.value) globalSearchInput.value.focus(); }
+      else { globalSearch.value = ''; }
+    });
+
+    // ===== Dashboard =====
+    const dashSearch = ref('');
+    const dashDateFrom = ref(toDateStr(Date.now()));
+    const dashDateTo = ref(toDateStr(Date.now()));
+    const dashPeriod = ref('today');
+
+    function setDashPeriod(p) {
+      dashPeriod.value = p;
+      const now = new Date();
+      const td = toDateStr(Date.now());
+      if (p === 'today') { dashDateFrom.value = td; dashDateTo.value = td; }
+      else if (p === 'week') {
+        const d = new Date(now); d.setDate(d.getDate() - d.getDay());
+        dashDateFrom.value = toDateStr(d.getTime()); dashDateTo.value = td;
+      } else if (p === 'month') {
+        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        dashDateFrom.value = toDateStr(d.getTime()); dashDateTo.value = td;
+      } else if (p === 'all') { dashDateFrom.value = '2000-01-01'; dashDateTo.value = td; }
+    }
+
+    const dashTxns = computed(() =>
+      sales.value.filter(s => s.date >= dashDateFrom.value && s.date <= dashDateTo.value)
+    );
+    const dashSalesTotal = computed(() => dashTxns.value.reduce((s, t) => s + t.total, 0));
+    const filteredDashTxns = computed(() => {
+      const q = dashSearch.value.toLowerCase();
+      let list = [...dashTxns.value];
+      if (q) list = list.filter(s =>
+        s.id.includes(q) || s.items.some(i => i.name.toLowerCase().includes(q))
+      );
+      return list.sort((a, b) => b.createdAt - a.createdAt);
+    });
+    const todayStr = computed(() => new Date().toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' }));
+
+    // ===== Inventory =====
+    const invSearch = ref('');
+    const invCategory = ref('all');
+    const invAdvOpen = ref(false);
+    const invMinPrice = ref('');
+    const invMaxPrice = ref('');
+    const invMinStock = ref('');
+    const invMaxStock = ref('');
+    const invStockStatus = ref('');
+    const invSort = ref('name');
+
+    function resetInvFilters() {
+      invSearch.value = ''; invMinPrice.value = ''; invMaxPrice.value = '';
+      invMinStock.value = ''; invMaxStock.value = ''; invStockStatus.value = ''; invSort.value = 'name';
+      invCategory.value = 'all';
+    }
+
+    const filteredProducts = computed(() => {
+      let list = [...products.value];
+      if (invCategory.value !== 'all') list = list.filter(p => p.category === invCategory.value);
+      if (invSearch.value) {
+        const q = invSearch.value.toLowerCase();
+        list = list.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+      }
+      if (invMinPrice.value !== '') list = list.filter(p => p.price >= Number(invMinPrice.value));
+      if (invMaxPrice.value !== '') list = list.filter(p => p.price <= Number(invMaxPrice.value));
+      if (invMinStock.value !== '') list = list.filter(p => p.stock >= Number(invMinStock.value));
+      if (invMaxStock.value !== '') list = list.filter(p => p.stock <= Number(invMaxStock.value));
+      if (invStockStatus.value === 'low') list = list.filter(p => p.stock > 0 && p.stock <= (p.lowStockAt || 5));
+      else if (invStockStatus.value === 'ok') list = list.filter(p => p.stock > (p.lowStockAt || 5));
+      else if (invStockStatus.value === 'out') list = list.filter(p => p.stock <= 0);
+      const sorts = {
+        name: (a,b) => a.name.localeCompare(b.name),
+        price_asc: (a,b) => a.price - b.price,
+        price_desc: (a,b) => b.price - a.price,
+        stock_asc: (a,b) => a.stock - b.stock,
+        stock_desc: (a,b) => b.stock - a.stock,
+      };
+      return list.sort(sorts[invSort.value] || sorts.name);
+    });
+
+    const lowStockProducts = computed(() => products.value.filter(p => p.stock <= (p.lowStockAt || 5)));
+
+    // ===== POS =====
+    const posSearch = ref('');
+    const posCategory = ref('all');
+    const cart = ref([]);
+    const paymentAmount = ref(0);
+    const showSaleSuccess = ref(false);
+    const lastSale = ref({ total: 0, payment: 0, change: 0, items: [] });
+
+    const posProducts = computed(() => {
+      let list = [...products.value];
+      if (posCategory.value !== 'all') list = list.filter(p => p.category === posCategory.value);
+      if (posSearch.value) {
+        const q = posSearch.value.toLowerCase();
+        list = list.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+      }
+      return list.sort((a,b) => a.name.localeCompare(b.name));
+    });
+    const cartTotal = computed(() => cart.value.reduce((s, i) => s + i.price * i.qty, 0));
+
+    function addToCart(p) {
+      if (p.stock <= 0) { showToast('⚠️ Out of stock!'); return; }
+      const ex = cart.value.find(i => i.id === p.id);
+      if (ex) {
+        if (ex.qty >= p.stock) { showToast('⚠️ Max stock reached'); return; }
+        ex.qty++;
+      } else {
+        cart.value.push({ id: p.id, name: p.name, price: p.price, qty: 1 });
+      }
+    }
+    function removeFromCart(id) { cart.value = cart.value.filter(i => i.id !== id); }
+    function changeQty(item, d) {
+      const p = products.value.find(x => x.id === item.id);
+      const nq = item.qty + d;
+      if (nq <= 0) { removeFromCart(item.id); return; }
+      if (p && nq > p.stock) { showToast('⚠️ Not enough stock'); return; }
+      item.qty = nq;
+    }
+    function clearCart() { cart.value = []; paymentAmount.value = 0; }
+    async function completeSale() {
+      if (!cart.value.length || paymentAmount.value < cartTotal.value) return;
+      const sale = {
+        id: genId(),
+        items: cart.value.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+        total: cartTotal.value, payment: paymentAmount.value,
+        change: paymentAmount.value - cartTotal.value,
+        date: toDateStr(Date.now()), createdAt: Date.now(),
+      };
+      await dbPut('sales', sale);
+      sales.value.push(sale);
+      for (const item of cart.value) {
+        const p = products.value.find(x => x.id === item.id);
+        if (p) { p.stock -= item.qty; await dbPut('products', { ...p }); }
+      }
+      lastSale.value = { ...sale };
+      paymentAmount.value = 0;
+      showSaleSuccess.value = true;
+    }
+    function closeSaleSuccess() { showSaleSuccess.value = false; clearCart(); }
+
+    // ===== Purchases =====
+    const purSearch = ref('');
+    const purAdvOpen = ref(false);
+    const purDateFrom = ref('');
+    const purDateTo = ref('');
+    const purMinCost = ref('');
+    const purMaxCost = ref('');
+    const purCategory = ref('');
+    const purSort = ref('date_desc');
+    const showPurchaseModal = ref(false);
+    const purchaseForm = ref({ productId: '', qty: 1, cost: 0 });
+    const selectedPurchaseProduct = computed(() => products.value.find(x => x.id === purchaseForm.value.productId) || null);
+    const purchaseWillCreateVariant = computed(() => {
+      const p = selectedPurchaseProduct.value;
+      if (!p) return false;
+      return Math.abs((Number(p.price) || 0) - (Number(purchaseForm.value.cost) || 0)) > 0.0001;
+    });
+
+    function resetPurFilters() {
+      purSearch.value = ''; purDateFrom.value = ''; purDateTo.value = '';
+      purMinCost.value = ''; purMaxCost.value = ''; purCategory.value = ''; purSort.value = 'date_desc';
+    }
+    const filteredPurchases = computed(() => {
+      let list = [...purchases.value];
+      if (purSearch.value) {
+        const q = purSearch.value.toLowerCase();
+        list = list.filter(p => p.productName.toLowerCase().includes(q));
+      }
+      if (purDateFrom.value) list = list.filter(p => p.date >= purDateFrom.value);
+      if (purDateTo.value) list = list.filter(p => p.date <= purDateTo.value);
+      if (purMinCost.value !== '') list = list.filter(p => p.totalCost >= Number(purMinCost.value));
+      if (purMaxCost.value !== '') list = list.filter(p => p.totalCost <= Number(purMaxCost.value));
+      if (purCategory.value) {
+        const catProds = products.value.filter(p => p.category === purCategory.value).map(p => p.id);
+        list = list.filter(p => catProds.includes(p.productId));
+      }
+      const sorts = {
+        date_desc: (a,b) => b.createdAt - a.createdAt,
+        date_asc: (a,b) => a.createdAt - b.createdAt,
+        cost_desc: (a,b) => b.totalCost - a.totalCost,
+        cost_asc: (a,b) => a.totalCost - b.totalCost,
+      };
+      return list.sort(sorts[purSort.value]);
+    });
+
+    function openPurchaseModal() { purchaseForm.value = { productId: '', qty: 1, cost: 0 }; showPurchaseModal.value = true; }
+    function onPurchaseProductChange() {
+      const p = products.value.find(x => x.id === purchaseForm.value.productId);
+      if (p) purchaseForm.value.cost = p.price;
+    }
+    function findMatchingPriceVariant(baseProduct, targetPrice) {
+      const wantedPrice = Number(targetPrice) || 0;
+      return products.value.find(item =>
+        item.id !== baseProduct.id &&
+        item.category === baseProduct.category &&
+        item.name.trim().toLowerCase() === baseProduct.name.trim().toLowerCase() &&
+        Math.abs((Number(item.price) || 0) - wantedPrice) <= 0.0001
+      ) || null;
+    }
+    async function savePurchase() {
+      const f = purchaseForm.value;
+      if (!f.productId) { showToast('⚠️ Select a product'); return; }
+      if (!f.qty || f.qty < 1) { showToast('⚠️ Qty must be at least 1'); return; }
+      const baseProduct = products.value.find(x => x.id === f.productId);
+      if (!baseProduct) return;
+
+      const qty = Number(f.qty) || 0;
+      const cost = Number(f.cost) || 0;
+      const samePrice = Math.abs((Number(baseProduct.price) || 0) - cost) <= 0.0001;
+      let targetProduct = baseProduct;
+      let createdVariant = false;
+
+      if (!samePrice) {
+        const existingVariant = findMatchingPriceVariant(baseProduct, cost);
+        if (existingVariant) {
+          targetProduct = existingVariant;
+        } else {
+          targetProduct = {
+            ...baseProduct,
+            id: genId(),
+            price: cost,
+            stock: 0,
+            updatedAt: Date.now(),
+            sourceProductId: baseProduct.id,
+          };
+          await dbPut('products', targetProduct);
+          products.value.push(targetProduct);
+          createdVariant = true;
+        }
+      }
+
+      const purchase = {
+        id: genId(),
+        productId: targetProduct.id,
+        productName: targetProduct.name,
+        sourceProductId: baseProduct.id,
+        qty,
+        cost,
+        totalCost: qty * cost,
+        date: toDateStr(Date.now()),
+        createdAt: Date.now(),
+        priceVariantCreated: createdVariant,
+      };
+
+      await dbPut('purchases', purchase);
+      purchases.value.push(purchase);
+
+      targetProduct.stock = Number(targetProduct.stock || 0) + qty;
+      targetProduct.updatedAt = Date.now();
+      await dbPut('products', { ...targetProduct });
+      const idx = products.value.findIndex(x => x.id === targetProduct.id);
+      if (idx >= 0) products.value[idx] = { ...targetProduct };
+
+      showPurchaseModal.value = false;
+      if (samePrice) {
+        showToast(`✅ +${qty} added to ${baseProduct.name}`);
+      } else if (createdVariant) {
+        showToast(`✅ New price item created for ${baseProduct.name} @ ₱${formatNum(cost)}`);
+      } else {
+        showToast(`✅ Stock added to existing ${baseProduct.name} @ ₱${formatNum(cost)}`);
+      }
+    }
+
+    // ===== Reports =====
+    const repSearch = ref('');
+    const repAdvOpen = ref(false);
+    const repDateFrom = ref(toDateStr(Date.now()));
+    const repDateTo = ref(toDateStr(Date.now()));
+    const repMinAmount = ref('');
+    const repMaxAmount = ref('');
+    const repSort = ref('date_desc');
+    const repQuick = ref('today');
+
+    function applyRepQuick() {
+      const now = new Date(); const td = toDateStr(Date.now());
+      if (repQuick.value === 'today') { repDateFrom.value = td; repDateTo.value = td; }
+      else if (repQuick.value === 'yesterday') {
+        const y = new Date(now); y.setDate(y.getDate()-1);
+        const yd = toDateStr(y.getTime()); repDateFrom.value = yd; repDateTo.value = yd;
+      } else if (repQuick.value === 'week') {
+        const d = new Date(now); d.setDate(d.getDate() - d.getDay());
+        repDateFrom.value = toDateStr(d.getTime()); repDateTo.value = td;
+      } else if (repQuick.value === 'month') {
+        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        repDateFrom.value = toDateStr(d.getTime()); repDateTo.value = td;
+      } else if (repQuick.value === 'all') { repDateFrom.value = '2000-01-01'; repDateTo.value = td; }
+    }
+    function resetRepFilters() {
+      repSearch.value = ''; repDateFrom.value = toDateStr(Date.now()); repDateTo.value = toDateStr(Date.now());
+      repMinAmount.value = ''; repMaxAmount.value = ''; repSort.value = 'date_desc'; repQuick.value = 'today';
+    }
+
+    const filteredRepTxns = computed(() => {
+      let list = [...sales.value];
+      if (repDateFrom.value) list = list.filter(s => s.date >= repDateFrom.value);
+      if (repDateTo.value) list = list.filter(s => s.date <= repDateTo.value);
+      if (repSearch.value) {
+        const q = repSearch.value.toLowerCase();
+        list = list.filter(s =>
+          s.id.toLowerCase().includes(q) ||
+          s.items.some(i => i.name.toLowerCase().includes(q)) ||
+          s.date.includes(q)
+        );
+      }
+      if (repMinAmount.value !== '') list = list.filter(s => s.total >= Number(repMinAmount.value));
+      if (repMaxAmount.value !== '') list = list.filter(s => s.total <= Number(repMaxAmount.value));
+      const sorts = {
+        date_desc: (a,b) => b.createdAt - a.createdAt,
+        date_asc: (a,b) => a.createdAt - b.createdAt,
+        amount_desc: (a,b) => b.total - a.total,
+        amount_asc: (a,b) => a.total - b.total,
+      };
+      return list.sort(sorts[repSort.value]);
+    });
+    const repSalesTotal = computed(() => filteredRepTxns.value.reduce((s, t) => s + t.total, 0));
+    const repItemsTotal = computed(() => filteredRepTxns.value.reduce((s, t) => s + t.items.reduce((a,i) => a+i.qty,0), 0));
+
+    // ===== Product CRUD =====
+    const showProductModal = ref(false);
+    const editingProduct = ref(null);
+    const productForm = ref({ name: '', category: '', price: 0, stock: 0, lowStockAt: 5 });
+
+    function openProductModal(p = null) {
+      editingProduct.value = p;
+      productForm.value = p ? { ...p } : { name: '', category: '', price: 0, stock: 0, lowStockAt: 5 };
+      showProductModal.value = true;
+    }
+    async function saveProduct() {
+      const f = productForm.value;
+      if (!f.name.trim()) { showToast('⚠️ Name required'); return; }
+      if (!f.category) { showToast('⚠️ Select category'); return; }
+      const product = {
+        id: editingProduct.value ? editingProduct.value.id : genId(),
+        name: f.name.trim(), category: f.category,
+        price: Number(f.price)||0, stock: Number(f.stock)||0,
+        lowStockAt: Number(f.lowStockAt)||5, updatedAt: Date.now(),
+      };
+      await dbPut('products', product);
+      const idx = products.value.findIndex(p => p.id === product.id);
+      if (idx >= 0) products.value[idx] = product; else products.value.push(product);
+      showProductModal.value = false;
+      showToast(editingProduct.value ? '✅ Product updated!' : '✅ Product added!');
+    }
+    async function deleteProduct(id) {
+      if (!confirm('Delete this product?')) return;
+      await dbDelete('products', id);
+      products.value = products.value.filter(p => p.id !== id);
+      showToast('🗑 Product deleted');
+    }
+
+    // ===== Export CSV =====
+    function exportCSV() {
+      if (!filteredRepTxns.value.length) { showToast('⚠️ No data to export'); return; }
+      const rows = [['ID','Date','Time','Items','Total','Payment','Change']];
+      for (const t of filteredRepTxns.value) {
+        rows.push([
+          t.id.slice(-8).toUpperCase(), t.date, formatTime(t.createdAt),
+          t.items.map(i => `${i.name}x${i.qty}`).join('|'),
+          t.total.toFixed(2), t.payment.toFixed(2), t.change.toFixed(2),
+        ]);
+      }
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type:'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales_${repDateFrom.value}_to_${repDateTo.value}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📥 CSV exported!');
+    }
+
+    // ===== Helpers =====
+    function formatNum(n) {
+      return Number(n||0).toLocaleString('en-PH', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    }
+    function formatTime(ts) { return new Date(ts).toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' }); }
+    function formatDate(ts) { return new Date(ts).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' }); }
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+    function categoryIcon(c) { return { nails:'🔩', cement:'🧱', electrical:'⚡', others:'🔧' }[c] || '📦'; }
+    function showToast(msg, dur=2600) {
+      toast.value = { show:true, msg };
+      setTimeout(() => { toast.value.show = false; }, dur);
+    }
+    function installPWA() {
+      if (deferredPrompt.value) {
+        deferredPrompt.value.prompt();
+        deferredPrompt.value.userChoice.then(() => { deferredPrompt.value = null; });
+      }
+    }
+
+    // ===== Init =====
+    async function init() {
+      try {
+        db = await openDB();
+        products.value = await dbGetAll('products');
+        sales.value = await dbGetAll('sales');
+        purchases.value = await dbGetAll('purchases');
+        if (products.value.length === 0) {
+          for (const p of SAMPLE_PRODUCTS) await dbPut('products', p);
+          products.value = [...SAMPLE_PRODUCTS];
+          showToast('✅ Sample data loaded!');
+        }
+      } catch (err) {
+        console.error(err);
+        if (!products.value.length) products.value = [...SAMPLE_PRODUCTS];
+      }
+      loading.value = false;
+    }
+
+    onMounted(() => {
+      // Check session first
+      checkSession();
+      init();
+
+      window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt.value = e; });
+      window.addEventListener('resize', () => { isMobile.value = window.innerWidth < 900; });
+      window.addEventListener('keydown', e => { if (e.key === 'Escape') { showGlobalSearch.value = false; userMenuOpen.value = false; } });
+
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+
+    return {
+      // Auth
+      isLoggedIn, currentUser, loginUser, loginPass, loginError, showLoginPw, userMenuOpen,
+      doLogin, doLogout,
+      showChangePw, changePwForm, changePwError, showCurrPw, showNewPw, showConfPw,
+      openChangePassword, doChangePassword,
+      // Core
+      loading, currentTab, tabs, isMobile, categories, products, sales, purchases, toast,
+      deferredPrompt, installPWA,
+      // Global Search
+      showGlobalSearch, globalSearch, globalSearchInput, globalResults,
+      highlight, gotoProduct, gotoSale, gotoPurchase,
+      // Dashboard
+      dashSearch, dashDateFrom, dashDateTo, dashPeriod, setDashPeriod,
+      dashTxns, dashSalesTotal, filteredDashTxns, todayStr,
+      // Inventory
+      invSearch, invCategory, invAdvOpen, invMinPrice, invMaxPrice, invMinStock, invMaxStock,
+      invStockStatus, invSort, resetInvFilters, filteredProducts, lowStockProducts,
+      showProductModal, editingProduct, productForm, openProductModal, saveProduct, deleteProduct,
+      // POS
+      posSearch, posCategory, cart, paymentAmount, cartTotal, posProducts,
+      addToCart, removeFromCart, changeQty, clearCart, completeSale,
+      showSaleSuccess, lastSale, closeSaleSuccess,
+      // Purchases
+      purSearch, purAdvOpen, purDateFrom, purDateTo, purMinCost, purMaxCost,
+      purCategory, purSort, resetPurFilters, filteredPurchases,
+      showPurchaseModal, purchaseForm, selectedPurchaseProduct, purchaseWillCreateVariant, openPurchaseModal, onPurchaseProductChange, savePurchase,
+      // Reports
+      repSearch, repAdvOpen, repDateFrom, repDateTo, repMinAmount, repMaxAmount,
+      repSort, repQuick, applyRepQuick, resetRepFilters,
+      filteredRepTxns, repSalesTotal, repItemsTotal, exportCSV,
+      // Helpers
+      formatNum, formatTime, formatDate, capitalize, categoryIcon,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
